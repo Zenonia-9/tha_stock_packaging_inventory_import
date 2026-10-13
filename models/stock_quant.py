@@ -1,4 +1,4 @@
-from odoo import _, api, models
+from odoo import _, models
 from odoo.exceptions import UserError
 
 from .common import require_manager
@@ -13,7 +13,6 @@ class StockQuant(models.Model):
             raise UserError(_('Save and select existing Physical Inventory lines before downloading a count sheet.'))
         return self.env['tha.inventory.count.template']._export_quants(self).download_action()
 
-    @api.model
     def tha_action_upload_packaging_counts(self):
         require_manager(self.env)
         return {

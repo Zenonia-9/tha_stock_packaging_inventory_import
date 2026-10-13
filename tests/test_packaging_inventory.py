@@ -5,6 +5,7 @@ import openpyxl
 
 from odoo import Command
 from odoo.exceptions import AccessError, UserError
+from odoo.service.model import call_kw
 from odoo.tests import TransactionCase, tagged
 
 
@@ -240,6 +241,12 @@ class TestPackagingInventory(TransactionCase):
         self.assertIn('file_data', download['url'])
         action = self.env['stock.quant'].tha_action_upload_packaging_counts()
         self.assertEqual(action['res_model'], 'tha.inventory.count.upload')
+        # List buttons pass selected IDs, including an empty list, through RPC.
+        for selected_ids in ([], self.quants.ids):
+            rpc_action = call_kw(self.env['stock.quant'], 'tha_action_upload_packaging_counts',
+                                 [selected_ids], {})
+            self.assertEqual(rpc_action['res_model'], 'tha.inventory.count.upload')
+            self.assertEqual(rpc_action['target'], 'new')
         template = self._template()
         wizard = self.env['tha.inventory.count.upload'].create({
             'file_data': base64.b64encode(self._edit_file(template, {self.quants[0].id: {8: 5}})),

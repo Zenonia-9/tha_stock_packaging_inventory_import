@@ -59,3 +59,20 @@ Date: 2026-10-13. Version: 19.0.1.0.2.
 - Existing unrelated addon manifest warnings remain in the project log. Expected
   rejection tests also emit translation-source warnings from common helper
   functions; these are not test errors.
+
+## Upload button RPC correction: 19.0.1.0.3
+
+- Removed `@api.model` from the upload list-button method. Odoo's button RPC
+  passes selected record IDs, which must be consumed as the method's recordset.
+  The decorator previously made those IDs an unexpected positional argument.
+- Added regression checks using Odoo `call_kw` with both an empty selection and
+  selected inventory lines, beyond the original direct method test.
+- Python/XML syntax and manifest data paths checked successfully.
+- Upgraded THA and reran all 17 tests: zero failures/errors, 51.80 seconds.
+  Project log confirmation: 2026-10-13 06:47:46 UTC.
+- Restarted Odoo and verified authenticated HTTP calls to the actual
+  `/web/dataset/call_button` endpoint with `args=[[]]` and `args=[[330]]`.
+  Both returned the upload wizard action successfully. Its form view loaded
+  with Preview Counts. No inventory values were written during HTTP verification.
+- The first HTTP attempt arrived during restart and returned
+  `RemoteDisconnected`; retry after startup succeeded.
