@@ -1,0 +1,15 @@
+<odoo>
+    <record id="stock_quant_packaging_counts" model="ir.ui.view">
+        <field name="name">stock.quant.inventory.packaging.counts</field>
+        <field name="model">stock.quant</field>
+        <field name="inherit_id" ref="stock.view_stock_quant_tree_inventory_editable"/>
+        <field name="arch" type="xml">
+            <xpath expr="//list/header" position="inside">
+                <button name="tha_action_download_packaging_counts" type="object"
+                        string="Download Packaging Count Sheet" groups="stock.group_stock_manager"/>
+                <button name="tha_action_upload_packaging_counts" type="object"
+                        string="Upload Packaging Counts" display="always" groups="stock.group_stock_manager"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

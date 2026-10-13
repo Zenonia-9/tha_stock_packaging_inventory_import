@@ -1,0 +1,93 @@
+<odoo>
+    <record id="inventory_count_import_list" model="ir.ui.view">
+        <field name="name">tha.inventory.count.import.list</field>
+        <field name="model">tha.inventory.count.import</field>
+        <field name="arch" type="xml">
+            <list create="0" edit="0" delete="0">
+                <field name="name"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="create_uid"/>
+                <field name="create_date"/>
+                <field name="line_count"/>
+                <field name="state"/>
+                <field name="imported_by"/>
+                <field name="imported_at"/>
+            </list>
+        </field>
+    </record>
+    <record id="inventory_count_import_form" model="ir.ui.view">
+        <field name="name">tha.inventory.count.import.form</field>
+        <field name="model">tha.inventory.count.import</field>
+        <field name="arch" type="xml">
+            <form create="0" edit="0" delete="0">
+                <header>
+                    <button name="action_confirm" type="object" string="Update Counted Quantities" class="btn-primary"
+                            invisible="state != 'preview'" confirm="Replace the existing counted quantities with these totals? Stock adjustments will still require the normal Apply action."/>
+                    <button name="action_view_inventory" type="object" string="View Inventory Lines"/>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <div class="oe_title"><h1><field name="name"/></h1></div>
+                    <group>
+                        <group>
+                            <field name="company_id"/>
+                            <field name="line_count"/>
+                            <field name="file_data" filename="filename"/>
+                            <field name="filename" invisible="1"/>
+                        </group>
+                        <group>
+                            <field name="create_uid"/>
+                            <field name="create_date"/>
+                            <field name="imported_by" invisible="state != 'done'"/>
+                            <field name="imported_at" invisible="state != 'done'"/>
+                        </group>
+                    </group>
+                    <p invisible="state != 'preview'">Review the quantities below. Confirmation replaces Counted Quantity on these existing inventory lines. Blank source rows were skipped.</p>
+                    <p invisible="state != 'done'">Counted quantities have been updated. Open View Inventory Lines and use the normal Apply action when ready.</p>
+                    <field name="line_ids">
+                        <list create="0" edit="0" delete="0">
+                            <field name="source_row"/>
+                            <field name="stock_line_id" optional="hide"/>
+                            <field name="product_name"/>
+                            <field name="location_name"/>
+                            <field name="lot_name" optional="show"/>
+                            <field name="package_name" optional="hide"/>
+                            <field name="owner_name" optional="hide"/>
+                            <field name="count_details"/>
+                            <field name="old_count_set"/>
+                            <field name="old_count"/>
+                            <field name="on_hand"/>
+                            <field name="new_count"/>
+                            <field name="unit_name"/>
+                            <field name="difference"/>
+                        </list>
+                        <form create="0" edit="0" delete="0">
+                            <group>
+                                <field name="product_name"/>
+                                <field name="location_name"/>
+                                <field name="lot_name"/>
+                                <field name="package_name"/>
+                                <field name="owner_name"/>
+                                <field name="source_row"/>
+                                <field name="stock_line_id"/>
+                                <field name="old_count_set"/>
+                                <field name="old_count"/>
+                                <field name="on_hand"/>
+                                <field name="new_count"/>
+                                <field name="unit_name"/>
+                            </group>
+                            <field name="count_details"/>
+                        </form>
+                    </field>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="action_inventory_count_imports" model="ir.actions.act_window">
+        <field name="name">Packaging Count Imports</field>
+        <field name="res_model">tha.inventory.count.import</field>
+        <field name="view_mode">list,form</field>
+    </record>
+    <menuitem id="menu_inventory_count_imports" name="Packaging Count Imports" parent="stock.menu_stock_adjustments"
+              action="action_inventory_count_imports" sequence="11" groups="stock.group_stock_manager"/>
+</odoo>

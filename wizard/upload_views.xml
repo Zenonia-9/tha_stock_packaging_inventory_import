@@ -1,0 +1,20 @@
+<odoo>
+    <record id="inventory_count_upload_form" model="ir.ui.view">
+        <field name="name">tha.inventory.count.upload.form</field>
+        <field name="model">tha.inventory.count.upload</field>
+        <field name="arch" type="xml">
+            <form string="Upload Packaging Counts">
+                <p>Upload the count sheet downloaded from Physical Inventory. Only existing lines will be updated after you review the conversion.</p>
+                <group>
+                    <field name="company_id"/>
+                    <field name="file_data" filename="filename"/>
+                    <field name="filename" invisible="1"/>
+                </group>
+                <footer>
+                    <button name="action_preview" type="object" string="Preview Counts" class="btn-primary"/>
+                    <button string="Cancel" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

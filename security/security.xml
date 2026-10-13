@@ -1,0 +1,17 @@
+<odoo>
+    <record id="count_template_company_rule" model="ir.rule">
+        <field name="name">Packaging count templates by company</field>
+        <field name="model_id" ref="model_tha_inventory_count_template"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="count_import_company_rule" model="ir.rule">
+        <field name="name">Packaging count imports by company</field>
+        <field name="model_id" ref="model_tha_inventory_count_import"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="count_import_line_company_rule" model="ir.rule">
+        <field name="name">Packaging count import lines by company</field>
+        <field name="model_id" ref="model_tha_inventory_count_import_line"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+</odoo>

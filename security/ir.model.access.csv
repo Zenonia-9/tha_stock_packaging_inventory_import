@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_count_template_manager,Packaging count template manager,model_tha_inventory_count_template,stock.group_stock_manager,1,1,1,0
+access_count_import_manager,Packaging count import manager,model_tha_inventory_count_import,stock.group_stock_manager,1,1,1,0
+access_count_import_line_manager,Packaging count import line manager,model_tha_inventory_count_import_line,stock.group_stock_manager,1,1,1,0
+access_count_upload_manager,Packaging count upload manager,model_tha_inventory_count_upload,stock.group_stock_manager,1,1,1,1
