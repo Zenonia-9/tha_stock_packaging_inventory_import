@@ -30,9 +30,14 @@ def root_unit(unit):
     return unit
 
 
-def conversion(unit, inventory_unit):
+def conversion(unit, inventory_unit, product):
     if not unit.active or root_unit(unit) != root_unit(inventory_unit):
-        raise UserError(_('The packaging must be active and use the same reference unit as the inventory unit.'))
+        raise UserError(_(
+            'The packaging must be active and use the same reference unit as the inventory unit.\n'
+            'Product: %(product)s\nPackaging: %(packaging)s\nInventory unit: %(inventory_unit)s',
+            product=product.display_name, packaging=unit.display_name,
+            inventory_unit=inventory_unit.display_name,
+        ))
     factor = unit._compute_quantity(1.0, inventory_unit, round=False)
     if not math.isfinite(factor) or factor <= 0:
         raise UserError(_('The packaging conversion must be a positive finite quantity.'))

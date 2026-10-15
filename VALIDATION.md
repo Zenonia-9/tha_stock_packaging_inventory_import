@@ -76,3 +76,19 @@ Date: 2026-10-13. Version: 19.0.1.0.2.
   with Preview Counts. No inventory values were written during HTTP verification.
 - The first HTTP attempt arrived during restart and returned
   `RemoteDisconnected`; retry after startup succeeded.
+
+## Product details in packaging errors: 19.0.1.0.4 (2026-10-15)
+
+- Reference-unit validation now includes product display name/internal reference,
+  packaging and inventory unit during download, upload and confirmation.
+- Download collects every invalid product/packaging pair, deduplicating products
+  repeated across inventory lines, and rejects before creating a template.
+- Python/XML syntax, manifest data paths and Git whitespace checks passed.
+- THA upgrade and all 19 module tests passed: zero failures/errors in 26.24s
+  (project log: 2026-10-15 04:20:19 UTC). New tests cover multiple affected
+  products, duplicate inventory lines, upload/confirmation details and no count
+  writes on rejection.
+- The first run had one test failure because archived packaging is filtered out
+  by the existing membership check. The corrected regression uses mismatched
+  reference units to exercise the requested conversion error.
+- Restarted Odoo. Browser dialog rendering was not visually verified.

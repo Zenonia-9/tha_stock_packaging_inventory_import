@@ -33,6 +33,9 @@ are validated against that snapshot. Counted packaging membership and conversion
 factors are rechecked on upload and confirmation. Unit precision changes, stale
 stock identities and counts/stock changed after preview block confirmation.
 New products first need their normal Physical Inventory lines before export.
+Packaging reference-unit errors identify the product (including its internal
+reference), packaging and inventory unit. Downloads list all affected products
+and packagings once, even when a product has multiple inventory lines.
 Different lots, serials, locations, stock packages and owners retain separate rows.
 Serial-number totals must be zero or one; tracked counts require an existing lot.
 

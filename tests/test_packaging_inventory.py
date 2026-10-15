@@ -135,6 +135,41 @@ class TestPackagingInventory(TransactionCase):
             batch.action_confirm()
         self.assertEqual(self.quants[0].inventory_quantity, 0)
 
+    def test_export_lists_all_products_with_invalid_packaging(self):
+        unrelated = self.env['uom.uom'].create({'name': 'Unrelated packaging'})
+        (self.coke | self.sprite).write({'uom_ids': [Command.link(unrelated.id)]})
+        extra_quant = self.env['stock.quant'].create({
+            'product_id': self.coke.id,
+            'location_id': self.location.copy({'name': 'Other invalid packaging location'}).id,
+        })
+        before_templates = self.templates.search_count([])
+        with self.assertRaises(UserError) as caught:
+            self._template(self.quants | extra_quant)
+        message = str(caught.exception)
+        self.assertIn('same reference unit', message)
+        for product in self.coke | self.sprite:
+            self.assertEqual(message.count('Product: %s' % product.display_name), 1)
+            self.assertIn(product.default_code, message)
+        self.assertIn('Packaging: %s' % unrelated.display_name, message)
+        self.assertIn('Inventory unit: %s' % self.unit.display_name, message)
+        self.assertEqual(self.templates.search_count([]), before_templates)
+
+    def test_mismatched_packaging_error_identifies_product_on_upload_and_confirmation(self):
+        template = self._template()
+        edits = {self.quants[0].id: {12: 2}}
+        batch = self._preview(template, edits)
+        self.box.relative_uom_id = self.env['uom.uom'].create({'name': 'Other reference unit'})
+        for action in (lambda: self._preview(template, edits), batch.action_confirm):
+            with self.assertRaises(UserError) as caught:
+                action()
+            message = str(caught.exception)
+            self.assertIn('same reference unit', message)
+            self.assertIn('Product: %s' % self.coke.display_name, message)
+            self.assertIn('Packaging: %s' % self.box.display_name, message)
+            self.assertIn('Inventory unit: %s' % self.unit.display_name, message)
+        self.assertEqual(self.quants[0].inventory_quantity, 0)
+        self.assertEqual(batch.state, 'preview')
+
     def test_packaging_removed_and_new_choices_refresh(self):
         template = self._template()
         self.coke.uom_ids = self.bottle

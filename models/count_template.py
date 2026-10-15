@@ -52,14 +52,22 @@ class InventoryCountTemplate(models.Model):
         quants.check_access('read')
         rows = {}
         max_slots = 0
+        conversion_errors = {}
         for quant in quants.sorted(lambda q: (q.location_id.display_name, q.product_id.display_name, q.id)):
             check_quant(quant)
             product = quant.product_id
             unit = product.uom_id
-            conversion(unit, unit)
+            try:
+                conversion(unit, unit, product)
+            except UserError as error:
+                conversion_errors.setdefault((product.id, unit.id), str(error))
             slots = []
             for packaging in product.uom_ids.filtered('active') - unit:
-                factor = conversion(packaging, unit)
+                try:
+                    factor = conversion(packaging, unit, product)
+                except UserError as error:
+                    conversion_errors.setdefault((product.id, packaging.id), str(error))
+                    continue
                 slots.append({
                     'uom_id': packaging.id, 'name': packaging.name, 'factor': factor,
                     'label': '%s\n(contains %s %s)' % (packaging.name, format(factor, '.12g'), unit.name),
@@ -75,6 +83,8 @@ class InventoryCountTemplate(models.Model):
                 'inventory_factor': unit.factor,
                 'rounding': unit.rounding,
             }
+        if conversion_errors:
+            raise UserError('\n\n'.join(conversion_errors.values()))
         snapshot = {'version': 1, 'max_slots': max_slots, 'rows': rows}
         template = internal(self).create({
             'name': _('Packaging count sheet — %s', fields.Date.today()),
@@ -193,7 +203,7 @@ class InventoryCountTemplate(models.Model):
             packaging = self.env['uom.uom'].browse(entry['uom_id']).exists()
             if not packaging or (packaging != unit and packaging not in allowed):
                 raise UserError(_('A counted packaging was removed from this product. Download a fresh template.'))
-            factor = conversion(packaging, unit)
+            factor = conversion(packaging, unit, quant.product_id)
             if not math.isclose(factor, entry['factor'], rel_tol=1e-12, abs_tol=1e-12):
                 raise UserError(_('A counted packaging conversion changed. Download a fresh template.'))
             converted.append(packaging._compute_quantity(entry['quantity'], unit, round=False))
