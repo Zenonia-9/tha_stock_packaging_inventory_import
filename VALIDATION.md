@@ -1,5 +1,15 @@
 # THA validation
 
+## Count sheet layout and protection: 19.0.1.0.5 (2026-10-21)
+
+- Moved Lot / Serial, Stock Package, and Owner after the loose and packaging
+  count fields. Updated upload parsing to validate the new visible layout.
+- Enabled protected-sheet row and column formatting. Only yellow count cells
+  remain editable; columns may be resized/hidden/unhidden, including the
+  intentionally hidden technical ID columns.
+- Python syntax and Git whitespace checks passed. THA module upgrade completed
+  successfully, and Odoo was restarted. The test suite was not run.
+
 Date: 2026-10-13. Version: 19.0.1.0.2.
 
 ## Installation and runtime

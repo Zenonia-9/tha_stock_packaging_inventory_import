@@ -100,10 +100,10 @@ class InventoryCountTemplate(models.Model):
         self.ensure_one()
         if max_slots is None:
             max_slots = self.snapshot['max_slots']
-        headers = ['Internal Reference', 'Product', 'Location', 'Lot / Serial',
-                   'Stock Package', 'Owner', 'Inventory Unit', 'Loose Count']
+        headers = ['Internal Reference', 'Product', 'Location', 'Inventory Unit', 'Loose Count']
         for index in range(max_slots):
             headers.extend(['Packaging %s' % (index + 1), 'Count %s' % (index + 1)])
+        headers.extend(['Lot / Serial', 'Stock Package', 'Owner'])
         headers.extend(['Stock Line ID', 'Product ID', 'Location ID', 'Lot ID',
                         'Stock Package ID', 'Owner ID', 'Inventory Unit ID'])
         headers.extend('Packaging %s ID' % (index + 1) for index in range(max_slots))
@@ -112,10 +112,12 @@ class InventoryCountTemplate(models.Model):
     def _row_values(self, row, max_slots=None):
         if max_slots is None:
             max_slots = self.snapshot['max_slots']
-        values = row['labels'] + [None]
+        labels = row['labels']
+        values = labels[:3] + [labels[6], None]
         for index in range(max_slots):
             slot = row['slots'][index] if index < len(row['slots']) else None
             values.extend([slot['label'] if slot else '', None])
+        values.extend(labels[3:6])
         ident = row['identity']
         values.extend(ident[key] for key in ('quant_id', 'product_id', 'location_id', 'lot_id',
                                             'package_id', 'owner_id', 'inventory_uom_id'))
@@ -143,18 +145,19 @@ class InventoryCountTemplate(models.Model):
         sheet.set_column(0, 0, 18)
         sheet.set_column(1, 1, 45)
         sheet.set_column(2, 2, 30)
-        sheet.set_column(3, 5, 20)
-        sheet.set_column(6, 6, 18)
-        sheet.set_column(7, 7, 14)
+        sheet.set_column(3, 3, 18)
+        sheet.set_column(4, 4, 14)
         for slot in range(max_slots):
-            sheet.set_column(8 + slot * 2, 8 + slot * 2, 25)
-            sheet.set_column(9 + slot * 2, 9 + slot * 2, 14)
+            sheet.set_column(5 + slot * 2, 5 + slot * 2, 25)
+            sheet.set_column(6 + slot * 2, 6 + slot * 2, 14)
+        detail_start = 5 + max_slots * 2
+        sheet.set_column(detail_start, detail_start + 2, 20)
         sheet.set_column(visible_columns, len(headers) - 1, 12, None, {'hidden': True})
         for row_index, row in enumerate(snapshot['rows'].values(), start=1):
             sheet.set_row(row_index, 34)
             sheet.write_row(row_index, 0, self._row_values(row, max_slots), label)
-            for column in [7] + [9 + index * 2 for index in range(max_slots)]:
-                is_unused = column != 7 and (column - 9) // 2 >= len(row['slots'])
+            for column in [4] + [6 + index * 2 for index in range(max_slots)]:
+                is_unused = column != 4 and (column - 6) // 2 >= len(row['slots'])
                 sheet.write_blank(row_index, column, None, unused if is_unused else count)
                 if not is_unused:
                     sheet.data_validation(row_index, column, row_index, column, {
@@ -164,7 +167,8 @@ class InventoryCountTemplate(models.Model):
                     })
         sheet.freeze_panes(1, 2)
         sheet.autofilter(0, 0, len(snapshot['rows']), visible_columns - 1)
-        sheet.protect('', {'autofilter': True, 'select_locked_cells': True, 'select_unlocked_cells': True})
+        sheet.protect('', {'autofilter': True, 'format_columns': True, 'format_rows': True,
+                           'select_locked_cells': True, 'select_unlocked_cells': True})
         guide = book.add_worksheet('Instructions')
         guide.set_column(0, 0, 110)
         for index, text in enumerate([
@@ -253,7 +257,7 @@ class InventoryCountTemplate(models.Model):
                 raise UserError(_('The counting sheet headers were changed. Download a fresh template.'))
             lines, seen = [], set()
             hidden_start = 8 + max_slots * 2
-            count_columns = {7} | {9 + index * 2 for index in range(max_slots)}
+            count_columns = {4} | {6 + index * 2 for index in range(max_slots)}
             for excel_row, cells in enumerate(sheet.iter_rows(min_row=2, max_col=len(headers)), start=2):
                 if excel_row > MAX_ROWS + 1:
                     raise UserError(_('The workbook has too many rows.'))
@@ -279,10 +283,10 @@ class InventoryCountTemplate(models.Model):
                     value = values[column]
                     if value is None or value == '':
                         continue
-                    if column == 7:
+                    if column == 4:
                         entry = {'uom_id': row['identity']['inventory_uom_id'], 'factor': 1.0, 'label': row['labels'][6]}
                     else:
-                        index = (column - 9) // 2
+                        index = (column - 6) // 2
                         if index >= len(row['slots']):
                             raise UserError(_('Row %s: a count was entered in an unused packaging slot.', excel_row))
                         entry = dict(row['slots'][index])

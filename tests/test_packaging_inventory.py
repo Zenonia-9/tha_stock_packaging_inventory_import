@@ -64,8 +64,8 @@ class TestPackagingInventory(TransactionCase):
         before_valuation = self.env['account.move'].search_count([]) if 'account.move' in self.env else None
         quantities = self.quants.mapped('quantity')
         batch = self._preview(template, {
-            self.quants[0].id: {8: 100, 10: 3, 12: 2},
-            self.quants[1].id: {8: 0, 10: 1, 12: 2},
+            self.quants[0].id: {5: 100, 7: 3, 9: 2},
+            self.quants[1].id: {5: 0, 7: 1, 9: 2},
         })
         self.assertEqual(batch.line_ids.mapped('new_count'), [3350, 2250])
         self.assertEqual(self.quants.mapped('inventory_quantity'), [0, 0])
@@ -82,14 +82,14 @@ class TestPackagingInventory(TransactionCase):
         self.assertEqual(batch.imported_by, self.env.user)
         with self.assertRaises(UserError):
             batch.action_confirm()
-        second = self._preview(template, {self.quants[0].id: {8: 100, 10: 3, 12: 2}})
+        second = self._preview(template, {self.quants[0].id: {5: 100, 7: 3, 9: 2}})
         second.action_confirm()
         self.assertEqual(self.quants[0].inventory_quantity, 3350)
 
     def test_zero_blank_and_omitted_rows(self):
         self.quants.write({'inventory_quantity': 15, 'inventory_quantity_set': True})
         template = self._template()
-        batch = self._preview(template, {self.quants[0].id: {8: 0}})
+        batch = self._preview(template, {self.quants[0].id: {5: 0}})
         self.assertEqual(len(batch.line_ids), 1)
         batch.action_confirm()
         self.assertEqual(self.quants.mapped('inventory_quantity'), [0, 15])
@@ -102,35 +102,35 @@ class TestPackagingInventory(TransactionCase):
         template = self._template(self.quants | quant)
         for value in (-1, 'two', True, '=1+1'):
             with self.subTest(value=value), self.assertRaises(UserError):
-                self._preview(template, {self.quants[0].id: {8: value}})
+                self._preview(template, {self.quants[0].id: {5: value}})
         with self.assertRaisesRegex(UserError, 'unused packaging'):
-            self._preview(template, {quant.id: {10: 0}})
+            self._preview(template, {quant.id: {7: 0}})
         with self.assertRaisesRegex(UserError, 'too large'):
-            self._preview(template, {self.quants[0].id: {10: 1e308, 12: 1e308}})
+            self._preview(template, {self.quants[0].id: {7: 1e308, 9: 1e308}})
 
     def test_modified_identities_headers_and_duplicate_rows(self):
         template = self._template()
-        for column in (1, 2, 3, 7, 9, 13, 14, 15, 19, 20):
+        for column in (1, 2, 3, 4, 6, 8, 10, 11, 12, 13, 14, 15, 19, 20):
             with self.subTest(column=column), self.assertRaises(UserError):
-                self._preview(template, {self.quants[0].id: {8: 1}},
+                self._preview(template, {self.quants[0].id: {5: 1}},
                               lambda book, col=column: book['Counts'].cell(2, col, 'Changed'))
         def duplicate(book):
             sheet = book['Counts']
             sheet.append([cell.value for cell in sheet[2]])
         with self.assertRaisesRegex(UserError, 'more than once'):
-            self._preview(template, {self.quants[0].id: {8: 1}}, duplicate)
+            self._preview(template, {self.quants[0].id: {5: 1}}, duplicate)
         with self.assertRaisesRegex(UserError, 'headers'):
-            self._preview(template, {self.quants[0].id: {8: 1}}, lambda book: book['Counts'].cell(1, 1, 'Changed'))
+            self._preview(template, {self.quants[0].id: {5: 1}}, lambda book: book['Counts'].cell(1, 1, 'Changed'))
         with self.assertRaises(UserError):
             self.batches._preview_upload(b'not an xlsx', 'Counts.xlsx')
 
     def test_packaging_conversion_changes_at_upload_and_confirmation(self):
         template = self._template()
-        batch = self._preview(template, {self.quants[0].id: {12: 2}})
+        batch = self._preview(template, {self.quants[0].id: {9: 2}})
         # Changing an ancestor changes the box conversion as well.
         self.bottle.relative_factor = 200
         with self.assertRaisesRegex(UserError, 'conversion changed'):
-            self._preview(template, {self.quants[0].id: {12: 2}})
+            self._preview(template, {self.quants[0].id: {9: 2}})
         with self.assertRaisesRegex(UserError, 'conversion changed'):
             batch.action_confirm()
         self.assertEqual(self.quants[0].inventory_quantity, 0)
@@ -156,7 +156,7 @@ class TestPackagingInventory(TransactionCase):
 
     def test_mismatched_packaging_error_identifies_product_on_upload_and_confirmation(self):
         template = self._template()
-        edits = {self.quants[0].id: {12: 2}}
+        edits = {self.quants[0].id: {9: 2}}
         batch = self._preview(template, edits)
         self.box.relative_uom_id = self.env['uom.uom'].create({'name': 'Other reference unit'})
         for action in (lambda: self._preview(template, edits), batch.action_confirm):
@@ -174,15 +174,15 @@ class TestPackagingInventory(TransactionCase):
         template = self._template()
         self.coke.uom_ids = self.bottle
         with self.assertRaisesRegex(UserError, 'removed'):
-            self._preview(template, {self.quants[0].id: {12: 1}})
-        batch = self._preview(template, {self.quants[0].id: {8: 10}})
+            self._preview(template, {self.quants[0].id: {9: 1}})
+        batch = self._preview(template, {self.quants[0].id: {5: 10}})
         batch.action_confirm()  # An unused removed slot does not prevent a loose count.
         fresh = self._template()
         self.assertEqual(len(fresh.snapshot['rows'][str(self.quants[0].id)]['slots']), 1)
 
     def test_changed_counts_after_preview_and_atomic_validation(self):
         template = self._template()
-        batch = self._preview(template, {quant.id: {8: 10} for quant in self.quants})
+        batch = self._preview(template, {quant.id: {5: 10} for quant in self.quants})
         self.quants[1].inventory_quantity = 20
         with self.assertRaisesRegex(UserError, 'after the preview'):
             batch.action_confirm()
@@ -193,16 +193,16 @@ class TestPackagingInventory(TransactionCase):
         template = self._template()
         self.quants[0].unlink()
         with self.assertRaisesRegex(UserError, 'no longer exists'):
-            self._preview(template, {self.quants[0].id: {8: 1}})
+            self._preview(template, {self.quants[0].id: {5: 1}})
         template = self._template(self.quants[1])
         self.unit.rounding = 0.1
         with self.assertRaisesRegex(UserError, 'precision changed'):
-            self._preview(template, {self.quants[1].id: {8: 1}})
+            self._preview(template, {self.quants[1].id: {5: 1}})
 
     def test_round_after_sum_and_label_rename(self):
         template = self._template()
         self.bottle.name = 'Renamed Bottle'
-        batch = self._preview(template, {self.quants[0].id: {8: 0.004, 10: 0.000016}})
+        batch = self._preview(template, {self.quants[0].id: {5: 0.004, 7: 0.000016}})
         self.assertEqual(batch.line_ids.new_count, 0.01)
         batch.action_confirm()
 
@@ -220,21 +220,21 @@ class TestPackagingInventory(TransactionCase):
              'package_id': package.id, 'owner_id': owner.id, 'quantity': 3},
             {'product_id': self.coke.id, 'location_id': other_location.id, 'lot_id': lot2.id, 'quantity': 4},
         ])
-        batch = self._preview(self._template(quants), {q.id: {8: 2} for q in quants})
+        batch = self._preview(self._template(quants), {q.id: {5: 2} for q in quants})
         batch.action_confirm()
         self.assertEqual(quants.mapped('inventory_quantity'), [2, 2])
         self.assertEqual(quants.mapped('quantity'), [3, 4])
         self.assertEqual(quants[0].package_id, package)
         self.assertEqual(quants[0].owner_id, owner)
         with self.assertRaisesRegex(UserError, 'requires an existing lot'):
-            self._preview(self._template(self.quants[0]), {self.quants[0].id: {8: 1}})
+            self._preview(self._template(self.quants[0]), {self.quants[0].id: {5: 1}})
         self.sprite.tracking = 'serial'
         serial = self.env['stock.lot'].create({'name': 'Count Serial', 'product_id': self.sprite.id, 'company_id': self.env.company.id})
         serial_quant = self.env['stock.quant'].create({'product_id': self.sprite.id, 'location_id': self.location.id, 'lot_id': serial.id})
         serial_template = self._template(serial_quant)
         with self.assertRaisesRegex(UserError, 'zero or one'):
-            self._preview(serial_template, {serial_quant.id: {10: 1}})
-        self._preview(serial_template, {serial_quant.id: {8: 1}}).action_confirm()
+            self._preview(serial_template, {serial_quant.id: {7: 1}})
+        self._preview(serial_template, {serial_quant.id: {5: 1}}).action_confirm()
 
     def test_workbook_protection_and_formula_free_layout(self):
         template = self._template()
@@ -243,12 +243,19 @@ class TestPackagingInventory(TransactionCase):
         self.assertEqual(sheet.max_row, 3)
         self.assertEqual(sheet.max_column, 21)
         self.assertTrue(sheet.protection.sheet)
-        self.assertFalse(sheet['H2'].protection.locked)
+        self.assertTrue(sheet.protection.formatRows)
+        self.assertTrue(sheet.protection.formatColumns)
+        self.assertFalse(sheet['E2'].protection.locked)
         self.assertTrue(sheet['B2'].protection.locked)
+        self.assertEqual([sheet.cell(1, column).value for column in range(1, 13)], [
+            'Internal Reference', 'Product', 'Location', 'Inventory Unit', 'Loose Count',
+            'Packaging 1', 'Count 1', 'Packaging 2', 'Count 2',
+            'Lot / Serial', 'Stock Package', 'Owner',
+        ])
         self.assertEqual(book['_InventoryMetadata'].sheet_state, 'veryHidden')
         self.assertFalse(any(cell.data_type == 'f' for row in sheet for cell in row))
         self.assertTrue(sheet.column_dimensions['M'].hidden)
-        self.assertIn('contains 250 Count ml', sheet['I2'].value)
+        self.assertIn('contains 250 Count ml', sheet['F2'].value)
         book.close()
 
     def test_audit_records_cannot_be_forged_by_rpc(self):
@@ -259,13 +266,13 @@ class TestPackagingInventory(TransactionCase):
             self.templates.with_context(_tha_packaging_operation=True).create({
                 'name': 'Fake', 'token': 'fake', 'company_id': self.env.company.id, 'snapshot': {},
             })
-        batch = self._preview(template, {self.quants[0].id: {8: 1}}).with_context(_tha_packaging_operation=None)
+        batch = self._preview(template, {self.quants[0].id: {5: 1}}).with_context(_tha_packaging_operation=None)
         with self.assertRaises(AccessError):
             batch.line_ids.write({'new_count': 999})
 
     def test_cross_company_template(self):
         template = self._template()
-        data = self._edit_file(template, {self.quants[0].id: {8: 1}})
+        data = self._edit_file(template, {self.quants[0].id: {5: 1}})
         company = self.env['res.company'].create({'name': 'Packaging Count Other Company'})
         with self.assertRaises(UserError):
             self.batches.with_company(company)._preview_upload(data, 'Counts.xlsx')
@@ -284,7 +291,7 @@ class TestPackagingInventory(TransactionCase):
             self.assertEqual(rpc_action['target'], 'new')
         template = self._template()
         wizard = self.env['tha.inventory.count.upload'].create({
-            'file_data': base64.b64encode(self._edit_file(template, {self.quants[0].id: {8: 5}})),
+            'file_data': base64.b64encode(self._edit_file(template, {self.quants[0].id: {5: 5}})),
             'filename': 'Counts.xlsx',
         })
         preview = wizard.action_preview()
@@ -307,7 +314,7 @@ class TestPackagingInventory(TransactionCase):
         template = self._template()
         self.quants[0].location_id = self.location.copy({'name': 'Changed Count Location'})
         with self.assertRaisesRegex(UserError, 'changed product, location'):
-            self._preview(template, {self.quants[0].id: {8: 1}})
+            self._preview(template, {self.quants[0].id: {5: 1}})
 
     def test_950_products_scale_and_new_product_export(self):
         products = self.env['product.product'].create([
@@ -322,7 +329,7 @@ class TestPackagingInventory(TransactionCase):
         template = self._template(quants)
         self.assertEqual(len(template.snapshot['rows']), 950)
         self.assertEqual(template.snapshot['max_slots'], 2)
-        data = self._edit_file(template, {quant.id: {8: 2} for quant in quants})
+        data = self._edit_file(template, {quant.id: {5: 2} for quant in quants})
         count_before = self.env['stock.quant'].search_count([])
         batch = self.batches._preview_upload(data, '950 Products.xlsx')
         self.assertEqual(len(batch.line_ids), 950)

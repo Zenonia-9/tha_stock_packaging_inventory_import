@@ -1,6 +1,6 @@
 {
     'name': 'Physical Inventory Counts by Packaging',
-    'version': '19.0.1.0.4',
+    'version': '19.0.1.0.5',
     'category': 'Inventory/Inventory',
     'summary': 'Update existing physical inventory lines from one-row packaging counts',
     'depends': ['stock'],

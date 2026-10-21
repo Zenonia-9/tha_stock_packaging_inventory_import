@@ -9,10 +9,13 @@ or post valuation entries.
 1. Select the correct company. Open Inventory → Operations → Physical Inventory.
 2. Save any newly added lines. Select the lines to count and click
    **Download Packaging Count Sheet**.
-3. Enter numbers in the yellow count cells. Each line already shows its base
-   unit and all active product packagings, ordered by conversion size.
-   Gray slots are unused. Names and identities are protected against accidental
-   editing. No formulas, dropdowns or macros are required. The standard `.xlsx`
+3. Enter numbers in the yellow count cells. Product, location, inventory unit,
+   and count fields come first; lot/serial, stock package, and owner details
+   follow the count fields. Active product packagings are ordered by conversion
+   size. Gray slots are unused. Names and identities are protected against
+   accidental editing. Row heights and column widths can be adjusted, and
+   columns can be hidden or unhidden. This includes the intentionally hidden
+   technical ID columns. No formulas, dropdowns or macros are required. The standard `.xlsx`
    format is designed for Excel 2016; native Excel 2016 interaction has not been
    verified in this run.
 4. Leave every count blank to skip a line. On a counted line, blank count cells
